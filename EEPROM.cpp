@@ -44,7 +44,6 @@
 #define PLACE_IN_INFOMEM __attribute__((section(".infomem")))
 uint8_t EEPROM_buffer[BYTES_PER_BLOCK] PLACE_IN_INFOMEM;
 
-
 uint8_t EEPROMClass::read(int address)
 {
 	return (uint8_t) EEPROM_buffer[address];
@@ -53,10 +52,11 @@ uint8_t EEPROMClass::read(int address)
 void EEPROMClass::write(int address, uint8_t value)
 {
 
-	//if (EEPROM_buffer[address] == 0xFF){
+#if (defined __MSP430_HAS_FLASH__) || (defined __MSP430_HAS_FLASH2__)
+	if (EEPROM_buffer[address] == 0xFF){
 	    // still erased - just write the data
-        //Flash.write((unsigned char *)&EEPROM_buffer[i],  (unsigned char *)&value,1);
-	//}else{
+        Flash.write((unsigned char *)&EEPROM_buffer[address],  (unsigned char *)&value,1);
+	}else{
 	    uint16_t i;
 	    uint8_t buffer[BYTES_PER_BLOCK];
         for (i =0;i<BYTES_PER_BLOCK;i++){
@@ -66,7 +66,10 @@ void EEPROMClass::write(int address, uint8_t value)
 
         Flash.erase((unsigned char *)EEPROM_buffer);
         Flash.write((unsigned char *)EEPROM_buffer,  (unsigned char *)buffer,BYTES_PER_BLOCK);
-	//}
+    }
+#else // FRAM
+	EEPROM_buffer[address]=value;
+#endif
 }
 
 void EEPROMClass::update(int address, uint8_t value)
